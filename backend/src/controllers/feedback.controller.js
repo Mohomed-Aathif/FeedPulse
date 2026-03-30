@@ -15,7 +15,7 @@ exports.createFeedback = async (req, res) => {
 
     const savedFeedback = await feedback.save();
 
-    // 🔥 AI processing (async, don't block response)
+    // AI processing (async, don't block response)
     analyzeAndUpdate(savedFeedback._id, title, description);
 
     return res.status(201).json({
@@ -83,6 +83,152 @@ exports.getAllFeedback = async (req, res) => {
         page: Number(page),
         pages: Math.ceil(total / limit)
       }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+exports.getFeedbackById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const feedback = await Feedback.findById(id);
+
+    if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feedback not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: feedback
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+exports.getFeedbackSummary = async (req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const feedbacks = await Feedback.find({
+      createdAt: { $gte: sevenDaysAgo },
+      ai_processed: true
+    });
+
+    if (feedbacks.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: 'No recent feedback available'
+      });
+    }
+
+    // Count tags frequency
+    const tagCount = {};
+
+    feedbacks.forEach((fb) => {
+      (fb.ai_tags || []).forEach((tag) => {
+        tagCount[tag] = (tagCount[tag] || 0) + 1;
+      });
+    });
+
+    // Sort top 3
+    const topTags = Object.entries(tagCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tag]) => tag);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalFeedback: feedbacks.length,
+        topThemes: topTags
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+exports.updateFeedbackStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const allowedStatus = ['New', 'In Review', 'Resolved'];
+
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status value'
+      });
+    }
+
+    const updated = await Feedback.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feedback not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: updated,
+      message: 'Status updated successfully'
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+exports.deleteFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Feedback.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feedback not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Feedback deleted successfully'
     });
 
   } catch (error) {
