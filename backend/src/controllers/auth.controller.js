@@ -1,27 +1,37 @@
+const User = require('../models/user.model');
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const ADMIN_EMAIL = "admin@example.com";
-const ADMIN_PASSWORD = "Admin123";
-
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+  const user = await User.findOne({ email });
+
+  if (!user) {
     return res.status(401).json({
       success: false,
-      message: "Invalid credentials"
+      message: 'Invalid credentials'
+    });
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
     });
   }
 
   const token = jwt.sign(
-    { email },
+    { id: user._id },
     process.env.JWT_SECRET,
     { expiresIn: '1d' }
   );
 
-  return res.status(200).json({
+  res.json({
     success: true,
     token,
-    message: "Login successful"
+    message: 'Login Successful'
   });
 };

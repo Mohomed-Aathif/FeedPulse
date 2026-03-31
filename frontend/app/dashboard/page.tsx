@@ -21,14 +21,14 @@ const router = useRouter();
 const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 const [loading, setLoading] = useState(true);
 
-// filters
 const [category, setCategory] = useState('');
 const [sentiment, setSentiment] = useState('');
+const [status, setStatus] = useState('');
 const [search, setSearch] = useState('');
 
-// pagination
 const [page, setPage] = useState(1);
 const [pages, setPages] = useState(1);
+const [sort, setSort] = useState('date');
 
 const fetchData = async () => {
 const token = localStorage.getItem('token');
@@ -39,7 +39,7 @@ if (!token) {
 }
 
 try {
-  const query = `?category=${encodeURIComponent(category)}&sentiment=${encodeURIComponent(sentiment)}&page=${page}&limit=5`;
+  const query = `?category=${encodeURIComponent(category)}&sentiment=${encodeURIComponent(sentiment)}&status=${encodeURIComponent(status)}&sort=${sort}&page=${page}&limit=10`;
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/api/feedback${query}`,
@@ -75,21 +75,19 @@ try {
 
 useEffect(() => {
 fetchData();
-}, [category, sentiment, page]);
+}, [category, sentiment, status, sort, page]);
 
-// SEARCH (frontend filter)
 const filtered = feedbacks.filter((f) =>
 f.title.toLowerCase().includes(search.toLowerCase()) ||
 (f.ai_summary || '').toLowerCase().includes(search.toLowerCase())
 );
 
-// STATS
 const total = feedbacks.length;
+const openItems = feedbacks.filter(f => f.status === 'New').length;
 const avgPriority =
 feedbacks.reduce((acc, f) => acc + (f.ai_priority || 0), 0) /
 (feedbacks.length || 1);
 
-// ACTIONS
 const updateStatus = async (id: string, status: string) => {
 const token = localStorage.getItem('token');
 
@@ -118,137 +116,236 @@ await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${id}`, {
 
 fetchData();
 
-
 };
 
-if (loading) return <p style={{ padding: '20px' }}>Loading...</p>;
+const reAnalyze = async (id: string) => {
+  const token = localStorage.getItem('token');
 
-return (
-<div style={{ padding: '20px' }}> <h2>Admin Dashboard</h2>
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/feedback/${id}/reanalyze`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
 
-  {/* STATS */}
-  <div style={{ marginBottom: '20px', display: 'flex', gap: '20px' }}>
-    <div>Total: {total}</div>
-    <div>Avg Priority: {avgPriority.toFixed(1)}</div>
-  </div>
+    fetchData(); // refresh list
 
-  {/* SEARCH */}
-  <input
-    placeholder="Search..."
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-    style={{ marginBottom: '20px', padding: '8px', width: '300px' }}
-  />
+  } catch (error) {
+    console.error('Re-analyze failed', error);
+  }
+};
 
-  {/* FILTERS */}
-  <div style={{ marginBottom: '20px' }}>
-    <select onChange={(e) => setCategory(e.target.value)}>
-      <option value="">All Categories</option>
-      <option value="Bug">Bug</option>
-      <option value="Feature Request">Feature Request</option>
-      <option value="Improvement">Improvement</option>
-      <option value="Other">Other</option>
-    </select>
+const tagCount: Record<string, number> = {};
 
-    <select
-      onChange={(e) => setSentiment(e.target.value)}
-      style={{ marginLeft: '10px' }}
-    >
-      <option value="">All Sentiments</option>
-      <option value="Positive">Positive</option>
-      <option value="Neutral">Neutral</option>
-      <option value="Negative">Negative</option>
-    </select>
-  </div>
+feedbacks.forEach(f => {
+  (f.ai_tags || []).forEach(tag => {
+    tagCount[tag] = (tagCount[tag] || 0) + 1;
+  });
+});
 
-  {/* LIST */}
-  {filtered.length === 0 ? (
-    <p>No feedback found</p>
-  ) : (
-    filtered.map((item) => (
-      <div
-        key={item._id}
-        style={{
-          border: '1px solid #ccc',
-          padding: '15px',
-          marginBottom: '10px',
-          borderRadius: '8px',
+const mostCommonTag = Object.entries(tagCount)
+  .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+if (loading) {
+return <div className="p-6">Loading...</div>;
+}
+
+return ( <div className="min-h-screen bg-gray-50 p-6"> <div className="max-w-5xl mx-auto">
+
+    {/* HEADER */}
+    <div className="flex justify-between items-center mb-6">
+      <h2 className="text-2xl font-bold text-gray-900">
+        Admin Dashboard
+      </h2>
+
+      <button
+        onClick={() => {
+          localStorage.removeItem('token');
+          router.push('/login');
         }}
+        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
       >
-        <h3>{item.title}</h3>
-        <p>{item.description}</p>
+        Logout
+      </button>
+    </div>
 
-        <p><strong>Category:</strong> {item.category}</p>
-        <p><strong>Status:</strong> {item.status}</p>
-
-        {/* SENTIMENT BADGE */}
-        <span
-          style={{
-            padding: '5px 10px',
-            borderRadius: '5px',
-            color: 'white',
-            backgroundColor:
-              item.ai_sentiment === 'Positive'
-                ? 'green'
-                : item.ai_sentiment === 'Negative'
-                ? 'red'
-                : 'gray',
-          }}
-        >
-          {item.ai_sentiment}
-        </span>
-
-        <p><strong>Priority:</strong> {item.ai_priority}</p>
-        <p><strong>Summary:</strong> {item.ai_summary}</p>
-
-        {/* ACTIONS */}
-        <div style={{ marginTop: '10px' }}>
-          <button onClick={() => updateStatus(item._id, 'In Review')}>
-            In Review
-          </button>
-
-          <button
-            onClick={() => updateStatus(item._id, 'Resolved')}
-            style={{ marginLeft: '10px' }}
-          >
-            Resolve
-          </button>
-
-          <button
-            onClick={() => deleteFeedback(item._id)}
-            style={{ marginLeft: '10px', color: 'red' }}
-          >
-            Delete
-          </button>
-        </div>
+    {/* STATS */}
+    <div className="flex gap-6 mb-6 flex-wrap">
+      <div className="bg-white p-4 rounded-lg shadow">
+        <p className="text-sm text-gray-500">Total Feedback</p>
+        <p className="text-xl font-bold text-gray-900">{total}</p>
       </div>
-    ))
-  )}
 
-  {/* PAGINATION */}
-  <div style={{ marginTop: '20px' }}>
-    <button disabled={page === 1} onClick={() => setPage(page - 1)}>
-      Prev
-    </button>
+      <div className="bg-white p-4 rounded-lg shadow">
+        <p className="text-sm text-gray-500">Open Items</p>
+        <p className="text-xl font-bold text-gray-900">{openItems}</p>
+      </div>
 
-    <span style={{ margin: '0 10px' }}>
-      Page {page} / {pages}
-    </span>
+      <div className="bg-white p-4 rounded-lg shadow">
+        <p className="text-sm text-gray-500">Avg Priority</p>
+        <p className="text-xl font-bold text-gray-900">
+          {avgPriority.toFixed(1)}
+        </p>
+      </div>
 
-    <button disabled={page === pages} onClick={() => setPage(page + 1)}>
-      Next
-    </button>
+      <div className="bg-white p-4 rounded-lg shadow">
+        <p className="text-sm text-gray-500">Top Tag</p>
+        <p className="text-xl font-bold text-gray-900">{mostCommonTag}</p>
+      </div>
+    </div>
 
-    <button onClick={() => {
-      localStorage.removeItem('token');
-      router.push('/login');
-    }}>
-      Logout
-    </button>
+    {/* SEARCH */}
+    <input
+      placeholder="Search feedback..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      className="w-full mb-4 p-3 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-500"
+    />
+
+    {/* FILTERS */}
+    <div className="flex gap-4 mb-6 flex-wrap">
+
+      <select
+        onChange={(e) => setCategory(e.target.value)}
+        className="p-3 border border-gray-300 rounded-lg text-gray-900 bg-white"
+      >
+        <option value="">All Categories</option>
+        <option value="Bug">Bug</option>
+        <option value="Feature Request">Feature Request</option>
+        <option value="Improvement">Improvement</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <select
+        onChange={(e) => setSentiment(e.target.value)}
+        className="p-3 border border-gray-300 rounded-lg text-gray-900 bg-white"
+      >
+        <option value="">All Sentiments</option>
+        <option value="Positive">Positive</option>
+        <option value="Neutral">Neutral</option>
+        <option value="Negative">Negative</option>
+      </select>
+
+      <select
+        onChange={(e) => setStatus(e.target.value)}
+        className="p-3 border border-gray-300 rounded-lg text-gray-900 bg-white"
+      >
+        <option value="">All Status</option>
+        <option value="New">New</option>
+        <option value="In Review">In Review</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+
+      <select
+        onChange={(e) => setSort(e.target.value)}
+        className="p-3 border border-gray-300 rounded-lg text-gray-900 bg-white"
+      >
+        <option value="date">Newest</option>
+        <option value="priority">Priority</option>
+        <option value="sentiment">Sentiment</option>
+      </select>
+
+    </div>
+
+    {/* LIST */}
+    {filtered.length === 0 ? (
+      <p className="text-gray-600">No feedback found</p>
+    ) : (
+      filtered.map((item) => (
+        <div
+          key={item._id}
+          className="bg-white p-5 rounded-lg shadow mb-5 hover:shadow-lg transition"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            {item.title}
+          </h3>
+
+          <p className="text-gray-600 mb-2">
+            {item.description}
+          </p>
+
+          <div className="text-sm text-gray-700 space-y-1">
+            <p><strong>Category:</strong> {item.category}</p>
+            <p><strong>Status:</strong> {item.status}</p>
+          </div>
+
+          <span className={`inline-block mt-2 px-3 py-1 rounded text-white text-sm ${
+            item.ai_sentiment === 'Positive'
+              ? 'bg-green-500'
+              : item.ai_sentiment === 'Negative'
+              ? 'bg-red-500'
+              : 'bg-gray-500'
+          }`}>
+            {item.ai_sentiment}
+          </span>
+
+          <p className="mt-2 text-sm">
+            <strong>Priority:</strong> {item.ai_priority}
+          </p>
+
+          <p className="text-sm">
+            <strong>Summary:</strong> {item.ai_summary}
+          </p>
+
+          <div className="mt-4 flex gap-2 flex-wrap">
+            <button
+              onClick={() => updateStatus(item._id, 'In Review')}
+              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            >
+              In Review
+            </button>
+
+            <button
+              onClick={() => updateStatus(item._id, 'Resolved')}
+              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+            >
+              Resolve
+            </button>
+
+            <button
+              onClick={() => deleteFeedback(item._id)}
+              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+            >
+              Delete
+            </button>
+
+            <button
+              onClick={() => reAnalyze(item._id)}
+              className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+            >
+              Re-analyze
+            </button>
+          </div>
+        </div>
+      ))
+    )}
+
+    {/* PAGINATION */}
+    <div className="flex justify-between items-center mt-6">
+      <button
+        disabled={page === 1}
+        onClick={() => setPage(page - 1)}
+        className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+      >
+        Prev
+      </button>
+
+      <span>
+        Page {page} / {pages || 1}
+      </span>
+
+      <button
+        disabled={page === pages}
+        onClick={() => setPage(page + 1)}
+        className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+      >
+        Next
+      </button>
+    </div>
+
   </div>
 </div>
-
-
 
 );
 }

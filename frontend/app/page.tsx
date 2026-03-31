@@ -15,15 +15,15 @@ const [loading, setLoading] = useState(false);
 const [message, setMessage] = useState('');
 
 const handleChange = (
-  e: React.ChangeEvent<
-    HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-  >
+e: React.ChangeEvent<
+HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+>
 ) => {
-  const { name, value } = e.target;
-  setForm((prev) => ({ ...prev, [name]: value }));
+const { name, value } = e.target;
+setForm((prev) => ({ ...prev, [name]: value }));
 };
 
-const handleSubmit = async (e: React.ChangeEvent<HTMLFormElement>) => {
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 e.preventDefault();
 setLoading(true);
 setMessage('');
@@ -37,21 +37,18 @@ try {
 
   const data = await res.json();
 
-  type ValidationError = {
-    msg: string;
-  };
+  type ValidationError = { msg: string };
 
   if (!res.ok) {
-  if (data.error && Array.isArray(data.error)) {
-    const errorMessages = (data.error as ValidationError[])
-      .map((e) => e.msg)
-      .join(', ');
+    if (data.error && Array.isArray(data.error)) {
+      const errorMessages = (data.error as ValidationError[])
+        .map((e) => e.msg)
+        .join(', ');
+      throw new Error(errorMessages);
+    }
 
-    throw new Error(errorMessages);
+    throw new Error(data.message || 'Validation failed');
   }
-
-  throw new Error(data.message || 'Validation failed');
-}
 
   setMessage('Feedback submitted successfully!');
   setForm({
@@ -64,9 +61,9 @@ try {
 
 } catch (error: unknown) {
   if (error instanceof Error) {
-    setMessage(error.message || 'Something went wrong');
+    setMessage(error.message);
   } else {
-    setMessage('An unknown error occurred');
+    setMessage('Something went wrong');
   }
 } finally {
   setLoading(false);
@@ -74,66 +71,71 @@ try {
 
 };
 
-return (
-<div style={{ padding: '40px', maxWidth: '600px', margin: 'auto' }}> <h1>Submit Feedback</h1>
+return ( <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4"> <div className="bg-white w-full max-w-xl p-8 rounded-xl shadow-md"> <h1 className="text-2xl font-bold text-gray-900 mb-6">
+Submit Feedback </h1>
 
-  <form onSubmit={handleSubmit}>
-    <input
-      name="title"
-      placeholder="Title"
-      value={form.title}
-      onChange={handleChange}
-      required
-      style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
-    />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <input
+        name="title"
+        placeholder="Title"
+        value={form.title}
+        onChange={handleChange}
+        required
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none placeholder:text-gray-500 text-gray-900"
+      />
 
-    <textarea
-      name="description"
-      placeholder="Description (min 20 chars)"
-      value={form.description}
-      onChange={handleChange}
-      required
-      minLength={20}
-      style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
-    />
+      <textarea
+        name="description"
+        placeholder="Description (min 20 chars)"
+        value={form.description}
+        onChange={handleChange}
+        required
+        minLength={20}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none placeholder:text-gray-500 text-gray-900"
+      />
+      
+      <select
+        name="category"
+        value={form.category}
+        onChange={handleChange}
+        className="w-full p-3 border border-gray-300 rounded-lg text-gray-900 bg-white"
+      >
+        <option value="Bug">Bug</option>
+        <option value="Feature Request">Feature Request</option>
+        <option value="Improvement">Improvement</option>
+        <option value="Other">Other</option>
+      </select>
 
-    <select
-      name="category"
-      value={form.category}
-      onChange={handleChange}
-      style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
-    >
-      <option value="Bug">Bug</option>
-      <option value="Feature Request">Feature Request</option>
-      <option value="Improvement">Improvement</option>
-      <option value="Other">Other</option>
-    </select>
+      <input
+        name="submitterName"
+        placeholder="Your Name (optional)"
+        value={form.submitterName}
+        onChange={handleChange}
+        className="w-full p-3 border border-gray-300 rounded-lg placeholder:text-gray-500 text-gray-900"
+      />
 
-    <input
-      name="submitterName"
-      placeholder="Your Name (optional)"
-      value={form.submitterName}
-      onChange={handleChange}
-      style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
-    />
+      <input
+        name="submitterEmail"
+        type="email"
+        placeholder="Your Email (optional)"
+        value={form.submitterEmail}
+        onChange={handleChange}
+        className="w-full p-3 border border-gray-300 rounded-lg placeholder:text-gray-500 text-gray-900"
+      />
 
-    <input
-      name="submitterEmail"
-      type="email"
-      placeholder="Your Email (optional)"
-      value={form.submitterEmail}
-      onChange={handleChange}
-      style={{ width: '100%', marginBottom: '10px', padding: '8px' }}
-    />
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
+      >
+        {loading ? 'Submitting...' : 'Submit'}
+      </button>
+    </form>
 
-    <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px' }}>
-      {loading ? 'Submitting...' : 'Submit'}
-    </button>
-  </form>
-
-  {message && <p style={{ marginTop: '10px' }}>{message}</p>}
+    {message && (
+      <p className="mt-4 text-sm text-gray-700">{message}</p>
+    )}
+  </div>
 </div>
-
-
 );
 }

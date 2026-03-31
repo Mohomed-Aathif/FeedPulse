@@ -55,7 +55,7 @@ const analyzeAndUpdate = async (id, title, description) => {
 
 exports.getAllFeedback = async (req, res) => {
   try {
-    const { category, status, sentiment, page = 1, limit = 10 } = req.query;
+    const { category, status, sentiment, sort = 'date', page = 1, limit = 10 } = req.query;
 
     // Build filter object dynamically
     const filter = {};
@@ -65,6 +65,11 @@ exports.getAllFeedback = async (req, res) => {
     } 
     if (status) filter.status = status;
     if (sentiment) filter.ai_sentiment = sentiment;
+
+    let sortOption = { createdAt: -1 };
+
+    if (sort === 'priority') sortOption = { ai_priority: -1 };
+    if (sort === 'sentiment') sortOption = { ai_sentiment: 1 };
 
     const skip = (page - 1) * limit;
 
@@ -236,6 +241,49 @@ exports.deleteFeedback = async (req, res) => {
       success: false,
       message: 'Server error',
       error: error.message
+    });
+  }
+};
+
+exports.reAnalyzeFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const feedback = await Feedback.findById(id);
+
+    if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feedback not found'
+      });
+    }
+
+    const aiResult = await analyzeFeedback(
+      feedback.title,
+      feedback.description
+    );
+
+    if (aiResult) {
+      feedback.ai_category = aiResult.category;
+      feedback.ai_sentiment = aiResult.sentiment;
+      feedback.ai_priority = aiResult.priority_score;
+      feedback.ai_summary = aiResult.summary;
+      feedback.ai_tags = aiResult.tags;
+      feedback.ai_processed = true;
+
+      await feedback.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'AI re-analysis completed',
+      data: feedback
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 };

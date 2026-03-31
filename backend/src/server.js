@@ -1,5 +1,6 @@
 const app = require('./app');
 const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
 
 require('dotenv').config();
 
@@ -16,3 +17,12 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => {
     console.error('DB connection failed:', err.message);
   });
+
+  const feedbackLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, 
+  max: 5,
+  message: {
+    success: false,
+    message: 'Too many submissions. Try again later.'
+  }
+});
