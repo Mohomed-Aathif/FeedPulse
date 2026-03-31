@@ -232,6 +232,7 @@ npm run dev
 
 docker compose up --build
 
+---
 
 ## 🔐 Security & Best Practices
 
