@@ -215,15 +215,13 @@ npm run dev
 
 ## 🖼️ Screenshots
 
-> Add screenshots here (very important for evaluation)
-
-* Feedback Form
+## Feedback Form
 ![Feedback Form](./screenshots/form.png)
-* Admin Dashboard
+## Admin Dashboard
 ![Dashboard](./screenshots/dashboard.png)
-* Admin Login
+## Admin Login
 ![Login](./screenshots/login.png)
-* Filters & Stats
+## Filters & Stats
 ![AI Integration](./screenshots/AIIntegration.png)
 
 ---
