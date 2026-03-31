@@ -213,13 +213,6 @@ npm run dev
 
 ---
 
-## 🐳 Docker Setup
-
-### Run the full application using Docker
-
-```bash
-docker compose up --build
-
 ## 🖼️ Screenshots
 
 > Add screenshots here (very important for evaluation)
@@ -234,6 +227,14 @@ docker compose up --build
 ![AI Integration](./screenshots/AIIntegration.png)
 
 ---
+
+## 🐳 Docker Setup
+
+### Run the full application using Docker
+
+```bash
+docker compose up --build
+
 
 ## 🔐 Security & Best Practices
 
