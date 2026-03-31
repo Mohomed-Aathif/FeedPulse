@@ -230,7 +230,6 @@ npm run dev
 
 ### Run the full application using Docker
 
-```bash
 docker compose up --build
 
 
@@ -256,5 +255,3 @@ If given more time, I would:
 * Deploy application (Vercel + Render)
 
 ---
-
-
