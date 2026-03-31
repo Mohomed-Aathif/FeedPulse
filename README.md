@@ -229,8 +229,9 @@ npm run dev
 ## 🐳 Docker Setup
 
 ### Run the full application using Docker
-
+```bash
 docker compose up --build
+```
 
 ---
 
