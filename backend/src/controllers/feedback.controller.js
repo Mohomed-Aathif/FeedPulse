@@ -56,7 +56,6 @@ exports.getAllFeedback = async (req, res) => {
   try {
     const { category, status, sentiment, sort = 'date', page = 1, limit = 10 } = req.query;
 
-    // Build filter object dynamically
     const filter = {};
 
     if (category) {

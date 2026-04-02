@@ -17,7 +17,6 @@ message: 'Too many submissions. Try again later.'
 }
 });
 
-// Protected routes
 router.get('/', verifyToken, getAllFeedback);
 router.get('/summary', verifyToken, getFeedbackSummary);
 router.get('/:id', verifyToken, getFeedbackById);
@@ -25,7 +24,6 @@ router.patch('/:id', verifyToken, updateFeedbackStatus);
 router.delete('/:id', verifyToken, deleteFeedback);
 router.post('/:id/reanalyze', verifyToken, reAnalyzeFeedback);
 
-// SINGLE CORRECT POST ROUTE
 router.post(
 '/',
 feedbackLimiter,

@@ -76,7 +76,6 @@ const feedbackSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
 feedbackSchema.index({ status: 1 });
 feedbackSchema.index({ category: 1 });
 feedbackSchema.index({ ai_priority: -1 });
