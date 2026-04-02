@@ -15,7 +15,6 @@ exports.createFeedback = async (req, res) => {
 
     const savedFeedback = await feedback.save();
 
-    // AI processing (async, don't block response)
     analyzeAndUpdate(savedFeedback._id, title, description);
 
     return res.status(201).json({
@@ -144,7 +143,6 @@ exports.getFeedbackSummary = async (req, res) => {
       });
     }
 
-    // Count tags frequency
     const tagCount = {};
 
     feedbacks.forEach((fb) => {
@@ -153,7 +151,6 @@ exports.getFeedbackSummary = async (req, res) => {
       });
     });
 
-    // Sort top 3
     const topTags = Object.entries(tagCount)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)

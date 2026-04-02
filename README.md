@@ -147,7 +147,7 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 ### 1. Clone the repository
 
 ```
-git clone <your-repo-url>
+git clone https://github.com/Mohomed-Aathif/FeedPulse.git
 cd feedpulse
 ```
 
@@ -170,22 +170,31 @@ npm run dev
 
 ---
 
-### 3. Create Admin User (One-time)
+### 👤 Admin Setup
 
+To create the Initial admin user:
+## Local Development
 ```
 node scripts/createAdmin.js
 ```
 
-Login credentials:
+## Docker Environment
+```
+docker exec -it feedpulse-backend-1 node scripts/createAdmin.js
+```
+> Run `docker ps` to confirm the backend container name if different
+
+Default credentials:
 
 ```
 Email: admin@example.com
 Password: Admin123
 ```
+This is a one-time setup to seed the admin user into the database.
 
 ---
 
-### 4. Setup Frontend
+### 3. Setup Frontend
 
 ```
 cd frontend
@@ -206,7 +215,7 @@ npm run dev
 
 ---
 
-### 5. Access Application
+### 4. Access Application
 
 * Frontend: http://localhost:3000
 * Admin Dashboard: http://localhost:3000/dashboard
@@ -221,7 +230,7 @@ npm run dev
 ![Dashboard](./screenshots/dashboard.png)
 ## Admin Login
 ![Login](./screenshots/login.png)
-## Filters & Stats
+## AI Insights & Analytics
 ![AI Integration](./screenshots/AIIntegration.png)
 
 ---
@@ -233,6 +242,22 @@ npm run dev
 docker compose up --build
 ```
 
+### Services:
+
+* Frontend → http://localhost:3000
+* Backend → http://localhost:4000
+* MongoDB included
+
+### Environment Variables
+
+Create a `.env` file in the root:
+
+```
+GEMINI_API_KEY=your_api_key
+JWT_SECRET=your_secret
+```
+
+> MongoDB is automatically configured via Docker.
 ---
 
 ## 🔐 Security & Best Practices
@@ -247,8 +272,6 @@ docker compose up --build
 
 ## 🚧 Future Improvements
 
-If given more time, I would:
-
 * Add role-based access control (multiple admins)
 * Implement real-time updates using WebSockets
 * Add charts/visual analytics for trends
@@ -257,5 +280,3 @@ If given more time, I would:
 * Deploy application (Vercel + Render)
 
 ---
-
-

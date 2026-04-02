@@ -1,6 +1,6 @@
 // One-time script to create initial admin user
 // Run manually using: node scripts/createAdmin.js
-// Do NOT expose in production routes
+// Do NOT expose via API routes
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');

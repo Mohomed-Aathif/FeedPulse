@@ -129,7 +129,7 @@ const reAnalyze = async (id: string) => {
       }
     });
 
-    fetchData(); // refresh list
+    fetchData();
 
   } catch (error) {
     console.error('Re-analyze failed', error);
